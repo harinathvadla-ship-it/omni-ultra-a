@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMNI Web Compiler</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; margin: 0; padding: 20px; }
+        h2 { color: #00ff88; }
+        textarea { 
+            width: 100%; height: 200px; 
+            background: #1e1e1e; color: #00ff88; 
+            border: 1px solid #333; border-radius: 8px; 
+            padding: 10px; font-family: monospace; font-size: 16px;
+            box-sizing: border-box;
+        }
+        button { 
+            background: #00ff88; color: black; 
+            border: none; padding: 15px 30px; 
+            margin-top: 10px; border-radius: 8px; 
+            font-weight: bold; width: 100%; cursor: pointer;
+        }
+        #output { 
+            margin-top: 20px; padding: 15px; 
+            background: #000; border-radius: 8px; 
+            min-height: 50px; white-space: pre-wrap;
+            border: 1px solid #444; color: #ddd;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>OMNI-ULTRA JS Compiler</h2>
+    <p>Write JavaScript code below and tap Run.</p>
+
+    <textarea id="codeInput">console.log("Hello from OMNI-ULTRA!");
+let x = 10;
+let y = 20;
+console.log("Result:", x + y);</textarea>
+
+    <button onclick="runCode()">RUN CODE</button>
+
+    <div id="output" id="outputBox">Output will appear here...</div>
+
+    <script>
+        function runCode() {
+            const code = document.getElementById('codeInput').value;
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = ""; // Clear old output
+
+            // Redirect console.log to our output div
+            const originalLog = console.log;
+            console.log = function(message) {
+                outputDiv.innerHTML += message + "\n";
+                originalLog.apply(console, arguments);
+            };
+
+            try {
+                eval(code); // This runs the actual code
+            } catch (err) {
+                outputDiv.innerHTML = "Error: " + err.message;
+            }
+
+            // Reset console.log
+            console.log = originalLog;
+        }
+    </script>
+</body>
+</html>
