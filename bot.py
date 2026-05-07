@@ -1,43 +1,34 @@
+
 import os
-import google.generativeai as genai
-from github import Github
+import requests
+import base64
 
-# 1. Setup GitHub and Gemini
-# These variables are pulled from your GitHub Secrets
-token = os.getenv('GITHUB_TOKEN')
-gemini_key = os.getenv('GEMINI_API_KEY')
-repo_name = os.getenv('GITHUB_REPOSITORY')
+# Use GitHub Secrets for your PAT in GitHub Actions
+GITHUB_TOKEN = os.getenv('MY_GITHUB_PAT') 
+USERNAME = "harinathvadla-ship-it"
 
-# Authenticate
-g = Github(token)
-repo = g.get_repo(repo_name)
-genai.configure(api_key=gemini_key)
-model = genai.GenerativeModel('gemini-1.5-flash')
-
-# 2. Find and respond to new issues
-issues = repo.get_issues(state='open')
-
-for issue in issues:
-    # Get all comments on this issue
-    comments = issue.get_comments()
+def build_new_app(app_name, prompt):
+    # 1. Ask Gemini/AI to generate HTML code based on the prompt
+    # (Simplified for this example)
+    generated_html = f"<html><body><h1>{app_name}</h1><p>{prompt}</p></body></html>"
     
-    # Check if the bot has already replied
-    if not any(comment.user.login == "github-actions[bot]" for comment in comments):
-        print(f"OMNI-ULTRA is thinking about: {issue.title}")
-        
-        # Create a prompt for Gemini
-        prompt = (
-            f"You are the OMNI-ULTRA AI Agent. Respond to this issue professionally.\n"
-            f"Issue Title: {issue.title}\n"
-            f"Issue Description: {issue.body}"
-        )
-        
-        # Generate the AI response
-        try:
-            response = model.generate_content(prompt)
-            reply_text = response.text
-        except Exception as e:
-            reply_text = "I encountered an error while processing this request."
+    # 2. Create the new Repository
+    repo_url = "https://api.github.com/user/repos"
+    repo_data = {"name": app_name, "auto_init": True}
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+    
+    requests.post(repo_url, json=repo_data, headers=headers)
 
-        # Post the comment back to GitHub
-        issue.create_comment(f"### 🤖 OMNI-ULTRA AI Response\n\n{reply_text}")
+    # 3. Push index.html to the new repo
+    file_url = f"https://api.api.github.com/repos/{USERNAME}/{app_name}/contents/index.html"
+    content_encoded = base64.b64encode(generated_html.encode()).decode()
+    
+    file_data = {
+        "message": "Agent created this app",
+        "content": content_encoded
+    }
+    
+    response = requests.put(file_url, json=file_data, headers=headers)
+    
+    if response.status_code == 201:
+        print(f"Success! App live at: https://{USERNAME}.github.io/{app_name}/")
