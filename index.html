@@ -1,19 +1,113 @@
-<div class="builder-section">
-    <input type="text" id="newAppName" placeholder="New App Name">
-    <textarea id="appGoal" placeholder="What should the new app do?"></textarea>
-    <button onclick="triggerBuild()">Build & Deploy App</button>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMNI App Factory</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #00ffcc; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .card { background: #1a1a1a; border: 1px solid #00ffcc; border-radius: 15px; padding: 20px; width: 100%; max-width: 500px; box-shadow: 0 0 20px rgba(0,255,204,0.2); }
+        h1 { text-align: center; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; }
+        label { display: block; margin-top: 15px; font-size: 0.8rem; color: #888; }
+        input, textarea { width: 100%; padding: 12px; margin-top: 5px; background: #262626; border: 1px solid #333; border-radius: 8px; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; margin-top: 20px; background: #00ffcc; color: black; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #00ccaa; box-shadow: 0 0 15px #00ffcc; }
+        #log { margin-top: 20px; font-family: monospace; font-size: 0.8rem; color: #00ffcc; width: 100%; max-width: 500px; height: 100px; overflow-y: auto; background: black; padding: 10px; border-radius: 8px; border: 1px solid #333; }
+    </style>
+</head>
+<body>
 
-<script>
-function triggerBuild() {
-    const name = document.getElementById('newAppName').value;
-    const goal = document.getElementById('appGoal').value;
-    
-    // This sends the data to your GitHub Action/Bot
-    fetch('/api/build', { 
-        method: 'POST', 
-        body: JSON.stringify({ name, goal }) 
-    });
-    alert("Agent is building your app... check GitHub in 1 minute!");
-}
-</script>
+    <h1>OMNI-ULTRA Factory</h1>
+
+    <div class="card">
+        <label>GITHUB TOKEN (PAT)</label>
+        <input type="password" id="token" placeholder="Paste your GitHub Token here">
+
+        <label>NEW APP NAME</label>
+        <input type="text" id="appName" placeholder="e.g. digital-clock">
+
+        <label>WHAT SHOULD THE AGENT BUILD?</label>
+        <textarea id="prompt" rows="4" placeholder="e.g. Create a calculator with a neon pink theme and large buttons."></textarea>
+
+        <button onclick="runAgent()">🚀 BUILD & DEPLOY APP</button>
+    </div>
+
+    <div id="log">System Ready... Waiting for input.</div>
+
+    <script>
+        const logBox = document.getElementById('log');
+        
+        function addLog(text) {
+            logBox.innerHTML += `<br>> ${text}`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        async function runAgent() {
+            const token = document.getElementById('token').value;
+            const name = document.getElementById('appName').value;
+            const prompt = document.getElementById('prompt').value;
+            const user = "harinathvadla-ship-it";
+            const mainRepo = "omni-ultra-a";
+
+            if (!token || !name || !prompt) {
+                addLog("ERROR: Missing fields!");
+                return;
+            }
+
+            addLog(`Analyzing request: ${name}...`);
+
+            // THE AGENT BRAIN: It 'imagines' the code for the new app
+            // You can replace this part with a Gemini API call later!
+            const generatedCode = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${name}</title>
+    <style>
+        body { background: #000; color: #00ffcc; font-family: sans-serif; text-align: center; padding: 100px; }
+        .app { border: 2px solid #00ffcc; padding: 20px; border-radius: 20px; display: inline-block; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <h1>${name}</h1>
+        <p>Built by OMNI-ULTRA Agent</p>
+        <p>Description: ${prompt}</p>
+        <button onclick="alert('Working!')">TEST APP</button>
+    </div>
+</body>
+</html>`;
+
+            addLog("Code generated. Connecting to GitHub...");
+
+            // THE AGENT HANDS: Sending the file to your GitHub
+            const url = `https://api.github.com/repos/${user}/${mainRepo}/contents/${name}/index.html`;
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: `Agent deployed: ${name}`,
+                        content: btoa(unescape(encodeURIComponent(generatedCode)))
+                    })
+                });
+
+                if (response.ok) {
+                    addLog("✅ SUCCESS!");
+                    addLog(`Link: https://${user}.github.io/${mainRepo}/${name}/`);
+                    window.open(`https://${user}.github.io/${mainRepo}/${name}/`, '_blank');
+                } else {
+                    const data = await response.json();
+                    addLog("FAILED: " + data.message);
+                }
+            } catch (err) {
+                addLog("SYSTEM ERROR: " + err);
+            }
+        }
+    </script>
+</body>
+</html>
